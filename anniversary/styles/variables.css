@@ -1,27 +1,29 @@
-/* ─── Palette ─────────────────────────────────────────── */
+/* ─── Palette (PRD §4.1) ──────────────────────────────── */
 :root {
   --bg:           #0A0A0A;
-  --bg-soft:      #111111;
+  --bg-live:      #0A0A0A;   /* follows the current chapter (set by JS) */
   --text-primary: #F0EBE0;   /* warm ivory */
-  --text-muted:   #6B6860;   /* desaturated gray */
-  --accent-cool:  #3A6BE8;   /* cobalt / electric blue */
+  --text-soft:    #CFC9BD;
+  --text-muted:   #8A857B;   /* desaturated gray — 5.3:1 on --bg */
+  --text-faint:   #5C5850;
+  --line:         rgba(240, 235, 224, 0.16);
+  --line-strong:  rgba(240, 235, 224, 0.5);
+  --accent-cool:  #6F8FE8;   /* cobalt family, lifted for contrast */
   --accent-warm:  #C8882A;   /* restrained amber */
-  --overlay:      rgba(10, 10, 10, 0.72);
 
-  /* ─── Typography ──────────────────────────────────────── */
-  --font-serif:  'Cormorant Garamond', 'Georgia', serif;
-  --font-sans:   'Inter', 'Helvetica Neue', Arial, sans-serif;
-  --font-mono:   'JetBrains Mono', 'Fira Mono', monospace;
+  /* ─── Typography (PRD §4.2) ───────────────────────────── */
+  --font-serif: 'Cormorant Garamond', 'Georgia', serif;
+  --font-sans:  'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:  'JetBrains Mono', 'Fira Mono', ui-monospace, monospace;
 
-  /* ─── Type scale ──────────────────────────────────────── */
   --text-xs:   0.6875rem;  /* 11px */
   --text-sm:   0.8125rem;  /* 13px */
-  --text-base: 1rem;       /* 16px */
-  --text-lg:   1.25rem;    /* 20px */
-  --text-xl:   1.75rem;    /* 28px */
-  --text-2xl:  2.5rem;     /* 40px */
-  --text-3xl:  4rem;       /* 64px */
-  --text-4xl:  6rem;       /* 96px */
+  --text-base: 1rem;
+  --text-lg:   1.25rem;
+  --text-xl:   1.75rem;
+  --text-2xl:  2.5rem;
+  --text-3xl:  4rem;
+  --text-4xl:  6.5rem;
 
   /* ─── Spacing ─────────────────────────────────────────── */
   --space-1:  0.25rem;
@@ -33,19 +35,23 @@
   --space-12: 3rem;
   --space-16: 4rem;
   --space-24: 6rem;
+  --gutter:   clamp(1.25rem, 4vw, 3.5rem);
 
-  /* ─── Motion ──────────────────────────────────────────── */
+  /* ─── Motion (PRD §22) ────────────────────────────────── */
   --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* small UI only */
-  --dur-fast:    150ms;
-  --dur-mid:     400ms;
+  --dur-fast:    160ms;
+  --dur-mid:     300ms;
   --dur-slow:    900ms;
-  --dur-scene:   1400ms;
 
-  /* ─── Layout ──────────────────────────────────────────── */
-  --canvas-z:    0;
-  --ui-z:        10;
-  --overlay-z:   20;
-  --controls-z:  30;
+  /* ─── Layers ──────────────────────────────────────────── */
+  --canvas-z:   0;
+  --ui-z:       10;
+  --grain-z:    20;
+  --controls-z: 30;
+  --entry-z:    40;
+  --cursor-z:   50;
+
+  /* section height multiplier (mobile scrolls a bit less) */
+  --h-scale: 1;
 }

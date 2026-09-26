@@ -1,88 +1,243 @@
-/* ─── Scene-specific CSS ──────────────────────────────── */
-
-/* SCENE 00 — Entry */
-.scene-entry {
-  background: var(--bg);
-  gap: var(--space-8);
+/* ─── SCENE 00 — Entry ────────────────────────────────── */
+.entry {
+  position: fixed;
+  inset: 0;
+  z-index: var(--entry-z);
+  display: grid;
+  place-items: center;
+  /* transparent centre: the far opening frame glows through as the one visual hint */
+  background: radial-gradient(ellipse 38% 46% at 50% 50%, rgba(10, 10, 10, 0.25), var(--bg) 78%);
 }
 
 .entry__inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-6);
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
   text-align: center;
-  pointer-events: auto;
+  /* sits slightly below centre so it never covers the distant frame */
+  transform: translateY(26svh);
 }
 
-.entry__for-you {
-  opacity: 0; /* animated in */
-}
-
+.entry__for-you,
 .entry__date {
   opacity: 0;
 }
 
 .entry__btn {
+  position: relative;
   margin-top: var(--space-4);
   padding: var(--space-3) var(--space-8);
-  border: 1px solid rgba(240,235,224,0.18);
+  min-height: 44px;
   color: var(--text-primary);
-  font-family: var(--font-sans);
+  font-family: var(--font-mono);
   font-weight: 300;
   font-size: var(--text-xs);
-  letter-spacing: 0.22em;
+  letter-spacing: 0.3em;
   text-transform: uppercase;
-  transition: border-color var(--dur-mid) var(--ease-out),
-              color var(--dur-mid) var(--ease-out);
+  opacity: 0;
+  transition: color var(--dur-mid) var(--ease-out);
+}
+
+.entry__btn::before,
+.entry__btn::after {
+  position: absolute;
+  top: 50%;
+  translate: 0 -50%;
+  color: var(--text-muted);
+  transition: translate var(--dur-mid) var(--ease-out), color var(--dur-mid) var(--ease-out);
+}
+.entry__btn::before { content: '['; left: 0.6rem; }
+.entry__btn::after  { content: ']'; right: 0.6rem; }
+
+.entry__btn:not(:disabled):hover::before,
+.entry__btn:focus-visible::before { translate: -6px -50%; color: var(--text-primary); }
+.entry__btn:not(:disabled):hover::after,
+.entry__btn:focus-visible::after  { translate: 6px -50%;  color: var(--text-primary); }
+
+.entry__load {
+  --p: 0;
+  width: 72px;
+  height: 1px;
+  background: var(--line);
+  opacity: 0;
+  overflow: hidden;
+  transition: opacity var(--dur-slow) var(--ease-out);
+}
+
+.entry__load::before {
+  content: '';
+  display: block;
+  height: 100%;
+  background: var(--text-soft);
+  transform-origin: left;
+  transform: scaleX(var(--p));
+  transition: transform 600ms var(--ease-out);
+}
+
+.entry__load.is-done {
+  opacity: 0 !important;
+}
+
+/* ─── SCENE 01 — Opening ──────────────────────────────── */
+.chapter__meta--opening {
+  gap: var(--space-6);
+  padding-bottom: calc(var(--gutter) * 2);
+}
+
+.opening__title,
+.opening__meta,
+.opening__statement,
+.opening__hint {
   opacity: 0;
 }
 
-.entry__btn:hover,
-.entry__btn:focus-visible {
-  border-color: rgba(240,235,224,0.55);
-  color: var(--text-primary);
+.opening__title {
+  max-width: 9ch;
 }
 
-/* SCENE 09 — Letter */
-.scene-letter {
-  background: transparent;
-  align-items: flex-start;
+.opening__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
 }
 
-.letter__inner {
-  max-width: 58ch;
+.opening__rule {
+  width: clamp(2.5rem, 6vw, 5rem);
+  height: 1px;
+  background: var(--line-strong);
+}
+
+.opening__statement {
+  max-width: 30ch;
+}
+
+.opening__hint {
+  margin-top: var(--space-8);
+  color: var(--text-faint);
+}
+
+/* ─── Chapter labels / captions ───────────────────────── */
+.chapter__label {
+  color: var(--text-muted);
+}
+
+.chapter__hint {
+  color: var(--text-faint);
+  margin-top: var(--space-2);
+}
+
+.chapter__meta--opening .chapter__label { color: var(--text-soft); }
+
+/* ─── SCENE 07 — frame focus buttons (keyboard access) ── */
+.focus-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  gap: var(--space-2);
+}
+
+.focus-list__btn {
+  /* visually hidden until focused */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
   pointer-events: auto;
 }
 
-.letter__for-you {
-  margin-bottom: var(--space-4);
+.focus-list__btn:focus-visible {
+  position: fixed;
+  left: var(--gutter);
+  bottom: calc(var(--gutter) * 1.4);
+  width: auto;
+  height: auto;
+  clip: auto;
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-primary);
+  z-index: var(--controls-z);
 }
 
-.letter__body p + p {
-  margin-top: var(--space-6);
+.focus-back {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-3);
+  translate: -50% 0;
+  z-index: var(--controls-z);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  color: var(--text-primary);
+  animation: fade-in 500ms var(--ease-out) both;
+}
+
+.focus-back__key {
+  padding: 0.1rem 0.35rem;
+  border: 1px solid var(--line);
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.is-focused .chapter--coupleArchive .chapter__meta {
+  opacity: 0 !important;
+  transition: opacity var(--dur-mid) var(--ease-out);
+}
+
+/* ─── SCENE 09 — Letter ───────────────────────────────── */
+.chapter--letter {
+  height: auto;
+  min-height: 100svh;
+  padding: 45svh var(--gutter) 60svh;
+  pointer-events: auto;
+}
+
+.letter {
+  /* asymmetric: set off the centre line, never full width */
+  width: min(100%, 36rem);
+  margin-left: clamp(0rem, 18vw, 22rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.letter__for-you {
+  margin-bottom: var(--space-8);
+}
+
+.letter__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1em;
 }
 
 .letter__signature {
   margin-top: var(--space-8);
-  color: var(--text-muted);
+  padding-left: 2.2em;
+  font-style: italic;
+  color: var(--text-soft);
 }
 
-/* SCENE 10 — Final */
-.scene-final {
-  justify-content: flex-end;
-  padding-bottom: var(--space-16);
+/* ─── SCENE 10 — Final ────────────────────────────────── */
+.final {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: var(--gutter);
 }
 
 .final__line {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-weight: 300;
-  font-size: clamp(var(--text-lg), 2.5vw, var(--text-xl));
-  color: var(--text-muted);
-  opacity: 0;
+  max-width: 18ch;
+  font-size: clamp(var(--text-xl), 4vw, var(--text-3xl));
+  line-height: 1.1;
   text-align: center;
+  opacity: 0;
 }

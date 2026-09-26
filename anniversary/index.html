@@ -2,11 +2,17 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Between Frames</title>
   <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#0A0A0A" />
+  <meta name="color-scheme" content="dark" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
-  <!-- CSS -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@300;400&display=swap" />
+
   <link rel="stylesheet" href="/styles/reset.css" />
   <link rel="stylesheet" href="/styles/variables.css" />
   <link rel="stylesheet" href="/styles/base.css" />
@@ -15,165 +21,58 @@
   <link rel="stylesheet" href="/styles/scenes.css" />
   <link rel="stylesheet" href="/styles/interaction.css" />
   <link rel="stylesheet" href="/styles/responsive.css" />
-
-  <!-- Preconnect fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 </head>
 <body>
-
-  <!-- Custom cursor (desktop only) -->
+  <!-- Shared Three.js canvas (decorative for assistive tech; photos are described in each section) -->
+  <div id="experience" aria-hidden="true"></div>
+  <div id="grain" aria-hidden="true"></div>
   <div id="cursor" aria-hidden="true"></div>
 
-  <!-- Shared Three.js canvas -->
-  <div id="experience" aria-hidden="true"></div>
-
-  <!-- ── SCENE 00 — ENTRY ─────────────────────────────── -->
-  <section
-    id="scene-entry"
-    class="scene scene--interactive scene-entry"
-    data-scene="entry"
-    aria-label="Entry"
-  >
-    <div class="entry__inner">
-      <p class="t-for-you entry__for-you">For You</p>
-      <p class="t-date entry__date">27.09.26</p>
-      <button
-        class="entry__btn"
-        id="enter-btn"
-        aria-label="Enter the experience"
-      >Enter</button>
-    </div>
-  </section>
-
-  <!-- ── SCROLL BODY (scenes 01–10 revealed after entry) ── -->
-  <div id="scroll-container" aria-hidden="true">
-
-    <!-- SCENE 01 — OPENING FRAME -->
-    <section
-      class="scene"
-      data-scene="opening"
-      aria-label="Opening"
-      style="min-height: 200dvh;"
-    ></section>
-
-    <!-- SCENE 02 — FRAME FIELD -->
-    <section
-      class="scene"
-      data-scene="frameField"
-      aria-label="Frame Field"
-      style="min-height: 200dvh;"
-    ></section>
-
-    <!-- SCENE 03 — ENVIRONMENTAL DEPTH -->
-    <section
-      class="scene"
-      data-scene="environmentalDepth"
-      aria-label="Environmental Depth"
-      style="min-height: 180dvh;"
-    ></section>
-
-    <!-- SCENE 04 — REFLECTIVE PASSAGE -->
-    <section
-      class="scene"
-      data-scene="reflectivePassage"
-      aria-label="Reflective Passage"
-      style="min-height: 180dvh;"
-    ></section>
-
-    <!-- SCENE 05 — PRIVATE DETAILS -->
-    <section
-      class="scene"
-      data-scene="privateDetails"
-      aria-label="Private Details"
-      style="min-height: 160dvh;"
-    ></section>
-
-    <!-- SCENE 06 — NIGHT SPACE -->
-    <section
-      class="scene"
-      data-scene="nightSpace"
-      aria-label="Night Space"
-      style="min-height: 200dvh;"
-    ></section>
-
-    <!-- SCENE 07 — COUPLE ARCHIVE -->
-    <section
-      class="scene"
-      data-scene="coupleArchive"
-      aria-label="Couple Archive"
-      style="min-height: 220dvh;"
-    ></section>
-
-    <!-- SCENE 08 — QUIET COUNTERPOINT -->
-    <section
-      class="scene"
-      data-scene="quietCounterpoint"
-      aria-label="Quiet Counterpoint"
-      style="min-height: 140dvh;"
-    ></section>
-
-    <!-- SCENE 09 — LETTER -->
-    <section
-      class="scene scene--interactive scene-letter scene--letter"
-      data-scene="letter"
-      aria-label="Letter"
-      aria-hidden="false"
-    >
-      <div class="letter__inner">
-        <p class="t-for-you letter__for-you">For You</p>
-
-        <div class="letter__body t-body" id="letter-content">
-          <!-- Placeholder — replace with personal letter from owner -->
-          <p>[ Isi surat dari pemilik ]</p>
-        </div>
-
-        <p class="t-body letter__signature" id="letter-signature">— [ Nama ]</p>
+  <main id="app">
+    <!-- SCENE 00 — ENTRY -->
+    <section id="entry" class="entry" aria-labelledby="entry-title">
+      <h1 id="entry-title" class="sr-only">Between Frames</h1>
+      <div class="entry__inner">
+        <p class="entry__for-you t-for-you" data-entry="for-you">For You</p>
+        <p class="entry__date t-date" data-entry="date">27.09.26</p>
+        <button id="enter-btn" class="entry__btn" type="button" disabled>
+          <span>Enter</span>
+        </button>
+        <div class="entry__load" role="progressbar" aria-label="Memuat" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
       </div>
     </section>
 
-    <!-- SCENE 10 — FINAL FRAME -->
-    <section
-      class="scene scene-final"
-      data-scene="finalFrame"
-      aria-label="Final Frame"
-      style="min-height: 200dvh;"
-    >
-      <p class="final__line t-body" id="final-line">
-        <!-- Personal closing line from owner -->
-        [ Closing line ]
-      </p>
-    </section>
+    <!-- SCENES 01–10 — generated from src/content/scenes.js -->
+    <div id="chapters" hidden></div>
+  </main>
 
-  </div><!-- /scroll-container -->
+  <nav id="progress" class="progress" aria-label="Chapters" hidden></nav>
 
-  <!-- ── UI Controls ───────────────────────────────────── -->
-  <nav id="controls" aria-label="Experience controls">
-    <button
-      class="ctrl-audio"
-      id="audio-toggle"
-      aria-pressed="true"
-      aria-label="Toggle music"
-    >
-      <span class="waveform" aria-hidden="true">
-        <span class="waveform__bar"></span>
-        <span class="waveform__bar"></span>
-        <span class="waveform__bar"></span>
-        <span class="waveform__bar"></span>
-        <span class="waveform__bar"></span>
+  <div id="controls" class="controls" hidden>
+    <button id="audio-toggle" class="ctrl-audio t-index" type="button" aria-pressed="false" aria-label="Music">
+      <span>sound</span>
+      <span class="ctrl-audio__line" aria-hidden="true">
+        <span class="waveform">
+          <span class="waveform__bar"></span>
+          <span class="waveform__bar"></span>
+          <span class="waveform__bar"></span>
+          <span class="waveform__bar"></span>
+        </span>
       </span>
+      <span class="ctrl-audio__state">off</span>
     </button>
-  </nav>
+  </div>
 
-  <!-- Scene progress dots -->
-  <nav id="progress" aria-label="Scene progress" aria-hidden="true"></nav>
+  <button id="focus-back" class="focus-back t-index" type="button" hidden>
+    <span aria-hidden="true">←</span> back <span class="focus-back__key" aria-hidden="true">esc</span>
+  </button>
 
-  <!-- Hidden audio element -->
-  <audio id="bg-audio" loop preload="none" aria-hidden="true">
-    <source src="/assets/audio/music.mp3" type="audio/mpeg" />
-  </audio>
+  <audio id="bg-audio" loop preload="none"></audio>
 
-  <!-- App entry point -->
+  <noscript>
+    <p class="noscript t-body">This piece needs JavaScript to open.</p>
+  </noscript>
+
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>

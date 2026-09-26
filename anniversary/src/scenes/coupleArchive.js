@@ -1,99 +1,96 @@
 // SCENE 07 — Couple Archive
-// Emotional core: asymmetric depth stack, pointer-driven parallax hierarchy.
-import { createPhotoPlane } from '../three/photoPlane.js';
-import { getScene } from '../three/scene.js';
-import { getCamera } from '../three/camera.js';
-import { scrollScene } from '../motion/scroll.js';
-import { onPointer } from '../motion/pointer.js';
-import { reducedMotion, ease } from '../motion/easing.js';
-import { photosByScene } from '../content/photos.js';
-import { isMobile } from '../utils/viewport.js';
-import gsap from 'gsap';
+// Emotional core. No grid: an asymmetric deep archive, 3–5 depth layers.
+// Dominant: stack displacement — the frames start stacked behind the primary
+// and slide out to their places (PRD §23 C). Supporting: pointer hierarchy
+// (primary tilts most, secondaries lag). Interaction: select a frame and the
+// camera flies to it; Esc / back / scrolling returns.
+import { lerp, lerp3, smoothstep, easeInOut, easeSine, damp } from '../utils/math.js';
 
-// Asymmetric composition per PRD §7 Scene 07
-// Primary (index 0) responds most to pointer; others trail
-const LAYOUT = [
-  { x:  0.0, y:  0.1, z:  0.0, h: 3.8, parallaxMult: 1.0 },  // primary
-  { x: -2.1, y:  0.6, z: -1.0, h: 3.2, parallaxMult: 0.6 },
-  { x:  2.4, y: -0.5, z: -2.0, h: 2.8, parallaxMult: 0.4 },
-  { x: -0.8, y: -1.2, z: -3.0, h: 2.4, parallaxMult: 0.25 },
-  { x:  1.0, y:  1.2, z: -1.5, h: 2.6, parallaxMult: 0.35 },
+// [x, y, z, height] — first is the primary.
+const DESKTOP = [
+  [ 0.25,  0.05,  0.0, 3.4],
+  [-2.55,  0.75, -1.4, 2.6],
+  [ 2.8,  -0.9,  -2.2, 1.85],
+  [-1.5,  -1.6,  -3.3, 1.6],
+  [ 2.3,   1.45, -4.2, 1.9],
+];
+const MOBILE = [
+  [ 0.0,  0.3,  0.0, 3.0],
+  [-0.5, -1.15, -1.6, 2.1],
+  [ 0.5,  1.35, -2.6, 1.3],
 ];
 
-let planes = [];
-let offPointer;
-let scrollTrigger;
-
-export async function initCoupleArchive() {
-  const assets     = photosByScene('coupleArchive')
-    .concat(photosByScene('opening'));  // opening heroes reuse here
-  const threeScene = getScene();
-  const camera     = getCamera();
-  const mobile     = isMobile();
-  const count      = mobile ? 2 : LAYOUT.length;
-
-  for (let i = 0; i < count; i++) {
-    const asset  = assets[i % assets.length];
-    const layout = LAYOUT[i];
-
-    const plane = createPhotoPlane({
-      src: i === 0 ? (asset.srcs.hero || asset.srcs.content) : asset.srcs.content,
-      width: asset.origW,
-      height: asset.origH,
-      planeHeight: layout.h,
-      position: { x: layout.x, y: layout.y, z: layout.z },
-      parallax: asset.parallaxStrength * layout.parallaxMult,
-    });
-
-    threeScene.add(plane.mesh);
-    planes.push({ plane, layout });
-    await plane.load();
-
-    gsap.to(plane.mesh.material, {
-      opacity: i === 0 ? 1 : 0.75 - i * 0.08,
-      duration: 1.6,
-      delay: i * 0.18,
-      ease: ease.out,
-    });
-  }
-
-  offPointer = onPointer((nx, ny) => {
-    planes.forEach(({ plane, layout }) => {
-      plane.setParallax(
-        nx * -0.05 * layout.parallaxMult,
-        ny *  0.03 * layout.parallaxMult
-      );
-    });
-
-    // Primary plane slight tilt
-    if (planes[0]) {
-      gsap.to(planes[0].plane.mesh.rotation, {
-        y: nx * 0.04, x: ny * -0.03,
-        duration: 1.0, ease: ease.gentle, overwrite: 'auto'
+export default {
+  build(ctx) {
+    const slots = ctx.mobile ? MOBILE : DESKTOP;
+    ctx.state.slots = slots;
+    slots.forEach(([x, y, z, h], i) => {
+      const plane = ctx.add(ctx.photos[i % ctx.photos.length], {
+        height: h, pos: [x, y, z], focusable: true,
       });
-    }
-  });
-
-  if (!reducedMotion) {
-    const trigger = document.querySelector('[data-scene="coupleArchive"]');
-    scrollTrigger = scrollScene({
-      trigger,
-      onUpdate: (prog) => {
-        camera.position.z = 5 - prog * 0.2;
-        camera.position.y = prog * -0.1;
-      },
+      plane.layer = i; // 0 = primary
     });
-  }
-}
+    ctx.engine.buildFocusButtons(ctx);
+  },
 
-export function tickCoupleArchive() {
-  planes.forEach(({ plane }) => plane.tick());
-}
+  pose(q, ctx) {
+    const t = easeSine(q);
+    const z0 = ctx.mobile ? 7.0 : 7.6;
+    return {
+      pos: lerp3([0, 0.1, z0], [0.2, 0.05, z0 - 1.3], t),
+      target: [0.1, 0, -1.6],
+    };
+  },
 
-export function disposeCoupleArchive() {
-  offPointer && offPointer();
-  scrollTrigger && scrollTrigger.kill();
-  const threeScene = getScene();
-  planes.forEach(({ plane }) => { threeScene.remove(plane.mesh); plane.dispose(); });
-  planes = [];
-}
+  update(q, dt, ctx) {
+    const open = ctx.reduced ? 1 : easeInOut(smoothstep(0.0, 0.45, q));
+    const p = ctx.engine.pointer;
+    const focused = ctx.engine.focusedPlane;
+    const k = damp(5, dt);
+
+    ctx.planes.forEach((plane, i) => {
+      const [x, y, z] = ctx.state.slots[i];
+      const m = plane.mesh;
+
+      if (i > 0) {
+        // stacked just behind the primary → displaced to its slot
+        const sx = 0.25 + i * 0.07;
+        const sy = 0.05 - i * 0.05;
+        const sz = -0.3 * i;
+        m.position.set(lerp(sx, x, open), lerp(sy, y, open), lerp(sz, z, open));
+        m.rotation.z = lerp((i % 2 ? -1 : 1) * 0.05, (i % 2 ? -1 : 1) * 0.012, open);
+      }
+
+      if (!ctx.reduced) {
+        // hierarchy: primary ~3°, secondaries progressively less
+        const w = i === 0 ? 1 : 0.35 / i;
+        m.rotation.y += (p.x * 0.05 * w - m.rotation.y) * k;
+        m.rotation.x += (-p.y * 0.035 * w - m.rotation.x) * k;
+      }
+
+      const opacityGoal = focused && focused !== plane ? 0.14 : 1;
+      plane.uniforms.uOpacity.value += (opacityGoal - plane.uniforms.uOpacity.value) * k;
+    });
+
+    if (!ctx.engine.touch) {
+      ctx.engine.setCursorHover(!focused && !!ctx.engine.pick(ctx.planes), 'archive');
+    }
+  },
+
+  enter(ctx) {
+    const e = ctx.engine;
+    ctx.state.onClick = ev => {
+      if (ev.target.closest('button, a, nav')) return;
+      const hit = e.pickAt(ev.clientX, ev.clientY, ctx.planes);
+      if (hit && hit !== e.focusedPlane) e.focusPlane(hit);
+      else if (e.focusedPlane) e.releaseFocus();
+    };
+    window.addEventListener('click', ctx.state.onClick);
+  },
+
+  leave(ctx) {
+    window.removeEventListener('click', ctx.state.onClick);
+    ctx.engine.releaseFocus();
+    ctx.engine.setCursorHover(false, 'archive');
+  },
+};

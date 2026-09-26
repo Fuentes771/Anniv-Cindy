@@ -1,86 +1,39 @@
 // SCENE 01 — Opening Frame
-// Hero photo on a plane, slow camera push-in on scroll.
-import * as THREE from 'three';
-import gsap from 'gsap';
-import { createPhotoPlane } from '../three/photoPlane.js';
-import { getScene } from '../three/scene.js';
-import { getCamera } from '../three/camera.js';
-import { scrollScene } from '../motion/scroll.js';
-import { onPointer } from '../motion/pointer.js';
-import { ease, reducedMotion } from '../motion/easing.js';
-import { photosByScene } from '../content/photos.js';
-import { getSceneById } from '../content/scenes.js';
-import { revealPlane } from '../motion/timeline.js';
-import { isMobile } from '../utils/viewport.js';
+// One hero on a plane. Dominant: slow camera push. Supporting: shallow tilt.
+// The chapter ends with the camera passing *through* the frame (PRD §23 A).
+import { lerp, smoothstep, easeIn } from '../utils/math.js';
 
-let planes = [];
-let offPointer;
-let scrollTrigger;
-
-export async function initOpening() {
-  const contract = getSceneById('opening');
-  const assets   = photosByScene('opening').slice(0, 1); // one hero
-  const threeScene = getScene();
-  const camera     = getCamera();
-
-  // Camera initial position
-  camera.position.set(...Object.values(contract.cameraStart));
-
-  for (const asset of assets) {
-    const plane = createPhotoPlane({
-      src: asset.srcs.hero || asset.srcs.content,
-      width: asset.origW,
-      height: asset.origH,
-      planeHeight: isMobile() ? 4 : 3.6,
-      position: { x: 0, y: 0, z: 0 },
-      rotation: { x: 0, y: 0, z: 0 },
-      parallax: asset.parallaxStrength,
-      placeholder: asset.placeholder,
+export default {
+  build(ctx) {
+    const [hero] = ctx.photos;
+    ctx.state.hero = ctx.add(hero, {
+      height: ctx.mobile ? 3.3 : 3.4,
+      quality: 'hero',
     });
-    threeScene.add(plane.mesh);
-    planes.push(plane);
-    await plane.load();
-    revealPlane(plane.mesh.material, 0.2);
-  }
+  },
 
-  // Pointer parallax
-  offPointer = onPointer((nx, ny) => {
-    planes.forEach(p => {
-      p.setParallax(nx * -0.03, ny * 0.02);
-      gsap.to(camera.rotation, {
-        x: ny * 0.02, y: nx * -0.02,
-        duration: 1.2, ease: ease.gentle, overwrite: 'auto'
-      });
-    });
-  });
+  pose(q, ctx) {
+    // Hold wide for the first half (typography reads), then push in and through.
+    const hold = smoothstep(0, 0.6, q);
+    const push = easeIn(smoothstep(0.55, 1, q));
+    const z = lerp(lerp(7.4, 5.6, hold), 0.9, push);
+    // mobile: camera sits lower → frame reads higher, title gets the bottom third
+    const drop = ctx.mobile ? lerp(-1.05, 0, push) : 0;
+    return {
+      pos: [0, lerp(0.12, -0.04, q) + drop, z],
+      target: [0, drop, -4],
+    };
+  },
 
-  // Scroll → camera push
-  if (!reducedMotion) {
-    const trigger = document.querySelector('[data-scene="opening"]');
-    scrollTrigger = scrollScene({
-      trigger,
-      start: 'top bottom',
-      end: 'bottom top',
-      onUpdate: (p) => {
-        // push from z=6 → z=4.2
-        camera.position.z = 6 - p * 1.8;
-        camera.position.y = p * -0.15;
-      },
-    });
-  }
-}
-
-export function tickOpening() {
-  planes.forEach(p => p.tick());
-}
-
-export function disposeOpening() {
-  offPointer && offPointer();
-  scrollTrigger && scrollTrigger.kill();
-  const threeScene = getScene();
-  planes.forEach(p => {
-    threeScene.remove(p.mesh);
-    p.dispose();
-  });
-  planes = [];
-}
+  update(q, dt, ctx) {
+    const { hero } = ctx.state;
+    // typography steps aside before the push so it never sits on the magnified frame
+    const meta = ctx.engine.sectionOf('opening')?.querySelector('.chapter__meta--opening');
+    if (meta) meta.style.opacity = (1 - smoothstep(0.42, 0.6, q)).toFixed(3);
+    if (!hero || ctx.reduced) return;
+    const p = ctx.engine.pointer;
+    // 2° max on the primary plane (PRD §10)
+    hero.mesh.rotation.y = p.x * 0.035;
+    hero.mesh.rotation.x = -p.y * 0.022;
+  },
+};

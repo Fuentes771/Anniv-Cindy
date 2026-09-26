@@ -3,7 +3,7 @@
   position: fixed;
   inset: 0;
   z-index: var(--canvas-z);
-  pointer-events: none; /* HTML scenes handle pointer */
+  pointer-events: none;
 }
 
 #experience canvas {
@@ -12,31 +12,33 @@
   height: 100%;
 }
 
-/* ─── Scene containers ────────────────────────────────── */
-.scene {
+#app {
   position: relative;
   z-index: var(--ui-z);
-  min-height: 100dvh;
+}
+
+/* ─── Chapters: scroll is the camera timeline (PRD §9) ─ */
+.chapter {
+  position: relative;
+  min-height: 100svh;
+  height: calc(var(--h, 100) * var(--h-scale) * 1svh);
+  pointer-events: none;
+}
+
+/* Label/caption sticks for the whole chapter, placed differently per chapter. */
+.chapter__meta {
+  position: sticky;
+  top: 0;
+  height: 100svh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  pointer-events: none; /* re-enable selectively */
+  gap: var(--space-3);
+  padding: calc(var(--gutter) * 1.6) var(--gutter);
+  max-width: 100%;
 }
 
-.scene--interactive {
-  pointer-events: auto;
-}
-
-/* ─── Main scroll container ───────────────────────────── */
-#scroll-container {
-  position: relative;
-  z-index: var(--ui-z);
-}
-
-/* ─── Letter scene special layout ────────────────────── */
-.scene--letter {
-  align-items: flex-start;
-  padding: var(--space-24) clamp(var(--space-8), 8vw, 12rem);
-  min-height: 100dvh;
-}
+.chapter__meta[data-align='left-bottom']   { justify-content: flex-end;   align-items: flex-start; }
+.chapter__meta[data-align='left-top']      { justify-content: flex-start; align-items: flex-start; padding-top: 18svh; }
+.chapter__meta[data-align='right-top']     { justify-content: flex-start; align-items: flex-end; text-align: right; }
+.chapter__meta[data-align='right-bottom']  { justify-content: flex-end;   align-items: flex-end; text-align: right; padding-bottom: 14svh; }
+.chapter__meta[data-align='center-bottom'] { justify-content: flex-end;   align-items: center; text-align: center; }

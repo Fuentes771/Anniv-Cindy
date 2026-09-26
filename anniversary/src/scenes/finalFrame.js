@@ -1,79 +1,61 @@
-// SCENE 10 — Final Frame
-// One hero plane, slow pull-back, final DOM line reveal.
-import { createPhotoPlane } from '../three/photoPlane.js';
-import { getScene } from '../three/scene.js';
-import { getCamera } from '../three/camera.js';
-import { scrollScene } from '../motion/scroll.js';
-import { reducedMotion, ease } from '../motion/easing.js';
-import { photosByScene } from '../content/photos.js';
-import { letter } from '../content/letter.js';
-import { isMobile } from '../utils/viewport.js';
-import gsap from 'gsap';
+// SCENE 10 — Final Frame · "a small world"
+// Back to the frame we entered through. The camera slowly pulls back and every
+// frame passed on the way re-appears around it, small and far, as one archive —
+// the world that exists because of the anniversary (PRD §46). Then the visuals
+// stop, dim, and only the final line remains (PRD §7 Scene 10).
+import { lerp, smoothstep, easeInOut } from '../utils/math.js';
+import { journeyPhotos } from '../content/photos.js';
+import { TIERS } from '../utils/performance.js';
 
-let plane;
-let scrollTrigger;
+export default {
+  build(ctx) {
+    const [hero] = ctx.photos;
+    ctx.state.hero = ctx.add(hero, { height: ctx.mobile ? 3.1 : 3.3 });
 
-export async function initFinalFrame() {
-  // Populate final line
-  const finalLineEl = document.getElementById('final-line');
-  if (finalLineEl && letter.finalLine) {
-    finalLineEl.textContent = letter.finalLine;
-  }
+    const limit = Math.min(TIERS[ctx.tier].archive, ctx.mobile ? 14 : Infinity);
+    const others = journeyPhotos().filter(p => p.key !== hero.key).slice(0, limit);
+    const sx = ctx.mobile ? 0.62 : 1.45;
+    const sy = ctx.mobile ? 1.15 : 0.78;
 
-  // Hero photo — prefer img-48 (mirror scratches = documentary character per PRD §17)
-  const assets     = photosByScene('opening').filter(a => a.id === 'img-48');
-  const asset      = assets[0] || photosByScene('opening')[0];
-  const threeScene = getScene();
-  const camera     = getCamera();
-
-  plane = createPhotoPlane({
-    src: asset.srcs.hero || asset.srcs.content,
-    width: asset.origW,
-    height: asset.origH,
-    planeHeight: isMobile() ? 4 : 3.8,
-    position: { x: 0, y: 0, z: 0 },
-    parallax: 0.08,
-  });
-
-  threeScene.add(plane.mesh);
-  await plane.load();
-  gsap.to(plane.mesh.material, { opacity: 1, duration: 2.0, ease: ease.out });
-
-  if (!reducedMotion) {
-    const trigger = document.querySelector('[data-scene="finalFrame"]');
-    scrollTrigger = scrollScene({
-      trigger,
-      onUpdate: (prog) => {
-        // slow pull-back: z 4.5 → 6
-        camera.position.z = 4.5 + prog * 1.5;
-        camera.position.y = prog * 0.1;
-
-        // final line reveal in second half
-        if (prog > 0.5 && finalLineEl) {
-          const lineProg = (prog - 0.5) * 2;
-          gsap.to(finalLineEl, {
-            opacity: lineProg,
-            y: 20 * (1 - lineProg),
-            duration: 0.01,
-            overwrite: 'auto',
-          });
-        }
-      },
+    ctx.state.archive = others.map((photo, i) => {
+      // golden-angle spiral: even, organic spacing without a grid
+      const a = i * 2.39996 + 0.9;
+      const r = 1.2 + Math.sqrt(i + 1) * 1.2;
+      const plane = ctx.add(photo, {
+        height: 1.25 + ((i * 7) % 5) * 0.16,
+        pos: [Math.cos(a) * r * sx, Math.sin(a) * r * sy, -2.2 - r * 1.1 - (i % 3) * 0.7],
+        rot: [0, -Math.cos(a) * 0.08, ((i % 5) - 2) * 0.01],
+        quality: 'thumb',
+        manualReveal: true,
+      });
+      plane.revealAt = 0.14 + 0.5 * (i / others.length);
+      return plane;
     });
-  } else {
-    if (finalLineEl) finalLineEl.style.opacity = '1';
-  }
-}
+  },
 
-export function tickFinalFrame() {
-  plane && plane.tick();
-}
+  pose(q, ctx) {
+    const pull = easeInOut(smoothstep(0.04, 0.86, q));
+    const far = ctx.mobile ? 23 : 21;
+    return {
+      pos: [0, lerp(0, 0.9, pull), lerp(5.2, far, pull)],
+      target: [0, lerp(0, -0.4, pull), -5],
+    };
+  },
 
-export function disposeFinalFrame() {
-  scrollTrigger && scrollTrigger.kill();
-  if (plane) {
-    getScene().remove(plane.mesh);
-    plane.dispose();
-    plane = null;
-  }
-}
+  update(q, dt, ctx) {
+    for (const p of ctx.state.archive) {
+      p.uniforms.uReveal.value = ctx.reduced ? 1 : smoothstep(p.revealAt, p.revealAt + 0.12, q);
+    }
+    const line = ctx.engine.sectionOf('finalFrame')?.querySelector('.final__line');
+    if (line) {
+      const t = smoothstep(0.84, 0.95, q);
+      line.style.opacity = t.toFixed(3);
+      line.style.transform = ctx.reduced ? 'none' : `translateY(${(1 - t) * 14}px)`;
+    }
+  },
+
+  // Visual stops; only the line is left.
+  dim(q) {
+    return 1 - 0.82 * smoothstep(0.8, 0.96, q);
+  },
+};

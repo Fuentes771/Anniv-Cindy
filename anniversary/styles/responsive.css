@@ -1,38 +1,55 @@
-/* ─── Responsive ──────────────────────────────────────── */
-
-/* Tablet */
-@media (max-width: 1024px) {
-  .scene--letter {
-    padding: var(--space-16) clamp(var(--space-6), 6vw, var(--space-24));
+/* ─── Tablet ──────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .letter {
+    margin-left: clamp(0rem, 8vw, 6rem);
   }
 }
 
-/* Mobile */
-@media (max-width: 640px) {
-  #progress { display: none; }
-
-  #controls {
-    bottom: var(--space-4);
-    right: var(--space-4);
-  }
-
-  .scene--letter {
-    padding: var(--space-12) var(--space-6);
-  }
-
-  .letter__inner {
-    max-width: 100%;
-  }
-}
-
-/* ─── Reduced motion ──────────────────────────────────── */
-@media (prefers-reduced-motion: reduce) {
-  .waveform__bar {
-    animation: none;
-  }
-
-  /* JS reads this to disable camera travel & parallax */
+/* ─── Mobile: recomposed, not shrunk (PRD §21, §35) ───── */
+@media (max-width: 700px), (max-aspect-ratio: 4/5) {
   :root {
-    --reduced-motion: 1;
+    --h-scale: 0.8;
+  }
+
+  .progress {
+    display: none;
+  }
+
+  .chapter__meta[data-align] {
+    justify-content: flex-end;
+    padding-bottom: calc(var(--gutter) * 2.2);
+  }
+
+  .chapter__meta[data-align='left-top'],
+  .chapter__meta[data-align='right-top'] {
+    justify-content: flex-start;
+    padding-top: calc(var(--gutter) * 2.5);
+  }
+
+  .letter {
+    margin-left: 0;
+  }
+
+  .chapter--letter {
+    padding-top: 35svh;
+  }
+
+  .focus-back {
+    bottom: calc(var(--gutter) * 3);
+  }
+}
+
+/* ─── Reduced motion (PRD §29, AC-08) ─────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .ctrl-audio[aria-pressed='true'] .waveform__bar {
+    animation: none;
+    transform: scaleY(0.5);
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
   }
 }

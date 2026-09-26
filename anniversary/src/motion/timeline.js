@@ -1,38 +1,40 @@
-// Timeline helpers — thin wrappers over GSAP for scene animation
+// DOM reveal helpers (GSAP). Text stays in HTML, never in WebGL (PRD §31.5).
 import gsap from 'gsap';
-import { ease } from './easing.js';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { ease, reducedMotion } from './easing.js';
 
-/**
- * Fade in a set of elements with stagger.
- */
-export function fadeIn(targets, overrides = {}) {
+gsap.registerPlugin(ScrollTrigger);
+
+/** Enter per PRD §22: opacity, 16–24px, blur 8→0 — a limited combination. */
+export function revealText(targets, overrides = {}) {
+  if (reducedMotion) {
+    return gsap.set(targets, { opacity: 1, y: 0, filter: 'none' });
+  }
   return gsap.fromTo(targets,
-    { opacity: 0, y: 30 },
-    { opacity: 1, y: 0, duration: 1.1, ease: ease.out, stagger: 0.12, ...overrides }
+    { opacity: 0, y: 18, filter: 'blur(8px)' },
+    { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.4, ease: ease.out, stagger: 0.12, ...overrides }
   );
 }
 
-/**
- * Fade out targets.
- */
-export function fadeOut(targets, overrides = {}) {
-  return gsap.to(targets, {
-    opacity: 0, duration: 0.7, ease: ease.in, ...overrides
+/** Reveal each element once as it scrolls into view. */
+export function revealOnScroll(elements, { start = 'top 82%' } = {}) {
+  const els = [...elements];
+  if (!els.length) return;
+  if (reducedMotion) {
+    gsap.set(els, { opacity: 1, y: 0, filter: 'none' });
+    return;
+  }
+  gsap.set(els, { opacity: 0, y: 18, filter: 'blur(8px)' });
+  ScrollTrigger.batch(els, {
+    start,
+    once: true,
+    onEnter: batch => gsap.to(batch, {
+      opacity: 1, y: 0, filter: 'blur(0px)',
+      duration: 1.6, ease: ease.out, stagger: 0.18,
+    }),
   });
 }
 
-/**
- * Reveal a Three.js plane opacity via GSAP (targets material.opacity).
- */
-export function revealPlane(material, delay = 0) {
-  return gsap.to(material, {
-    opacity: 1, duration: 1.4, delay, ease: ease.out
-  });
-}
-
-/**
- * Hide a Three.js plane.
- */
-export function hidePlane(material) {
-  return gsap.to(material, { opacity: 0, duration: 0.8, ease: ease.in });
+export function refreshScrollTriggers() {
+  ScrollTrigger.refresh();
 }
