@@ -1,87 +1,55 @@
 // SCENE 06 — Night / Event Space
-// Dark environment: horizontal drift, depth separation via opacity layers.
-import { createPhotoPlane } from '../three/photoPlane.js';
-import { getScene } from '../three/scene.js';
-import { getCamera } from '../three/camera.js';
-import { scrollScene } from '../motion/scroll.js';
-import { onPointer } from '../motion/pointer.js';
-import { reducedMotion } from '../motion/easing.js';
-import { photosByScene } from '../content/photos.js';
-import gsap from 'gsap';
-import { ease } from '../motion/easing.js';
-import { isMobile } from '../utils/viewport.js';
+// Stage and crowd light already give these photos depth. Dominant: slow
+// horizontal drift. Supporting: a rack focus that travels from the front frame
+// to the back one — depth separation borrowed from photography, not neon.
+import { lerp, lerp3, clamp, easeSine, damp } from '../utils/math.js';
 
-const LAYOUT = [
-  { x:  0.0, y:  0.0, z:  0.0, opacity: 1.0   },
-  { x: -2.2, y:  0.3, z: -1.8, opacity: 0.72   },
-  { x:  2.0, y: -0.4, z: -3.0, opacity: 0.55   },
-  { x: -0.8, y: -1.2, z: -4.5, opacity: 0.38   },
+const DESKTOP = [
+  [-2.6,  0.2,   0.0, 3.0],
+  [ 0.25,-0.2,  -2.6, 3.2],
+  [ 2.9,  0.4,  -5.0, 2.8],
+  [-0.9,  0.55, -7.6, 2.6],
+  [ 1.9, -0.4, -10.2, 2.8],
+];
+const MOBILE = [
+  [-0.35, 0.3,  0.0, 2.8],
+  [ 0.4, -0.3, -3.2, 2.8],
+  [ 0.0,  0.25,-6.8, 2.6],
 ];
 
-let planes = [];
-let offPointer;
-let scrollTrigger;
-
-export async function initNightSpace() {
-  const assets     = photosByScene('nightSpace');
-  const threeScene = getScene();
-  const camera     = getCamera();
-  const mobile     = isMobile();
-  const count      = mobile ? 2 : LAYOUT.length;
-
-  for (let i = 0; i < count; i++) {
-    const asset  = assets[i % assets.length];
-    const layout = LAYOUT[i];
-
-    const plane = createPhotoPlane({
-      src: asset.srcs.content,
-      width: asset.origW,
-      height: asset.origH,
-      planeHeight: 3.4,
-      position: { x: layout.x, y: layout.y, z: layout.z },
-      parallax: asset.parallaxStrength * (1 - i * 0.15),
+export default {
+  build(ctx) {
+    const slots = ctx.mobile ? MOBILE : DESKTOP;
+    slots.forEach(([x, y, z, h], i) => {
+      ctx.add(ctx.photos[i % ctx.photos.length], { height: h, pos: [x, y, z] });
     });
+    ctx.state.depths = slots.map(s => s[2]);
+  },
 
-    threeScene.add(plane.mesh);
-    planes.push(plane);
-    await plane.load();
+  pose(q, ctx) {
+    const t = easeSine(q);
+    if (ctx.mobile) {
+      return {
+        pos: lerp3([-0.2, 0.1, 6.6], [0.2, 0.0, 4.6], t),
+        target: lerp3([0, 0, -2], [0, 0, -6], t),
+      };
+    }
+    const x = lerp(-2.4, 2.3, t);
+    return {
+      pos: [x, lerp(0.15, -0.05, t), lerp(6.3, 4.4, t)],
+      target: [x * 0.6, 0, -4],
+    };
+  },
 
-    // Reveal to target opacity (depth-based bokeh sim via opacity)
-    gsap.to(plane.mesh.material, {
-      opacity: layout.opacity,
-      duration: 1.4,
-      delay: i * 0.2,
-      ease: ease.out,
+  update(q, dt, ctx) {
+    const depths = ctx.state.depths;
+    const first = depths[0];
+    const last = depths[depths.length - 1];
+    const focusZ = ctx.reduced ? first : lerp(first + 0.3, last, easeSine(q));
+    const k = damp(4, dt);
+    ctx.planes.forEach((p, i) => {
+      const goal = clamp(Math.abs(depths[i] - focusZ) * 0.09 - 0.05, 0, 0.4);
+      p.uniforms.uBlur.value += (goal - p.uniforms.uBlur.value) * k;
     });
-  }
-
-  offPointer = onPointer((nx, ny) => {
-    planes.forEach((p, i) => {
-      const str = 1 - i * 0.18;
-      p.setParallax(nx * -0.035 * str, ny * 0.02 * str);
-    });
-  });
-
-  if (!reducedMotion) {
-    const trigger = document.querySelector('[data-scene="nightSpace"]');
-    scrollTrigger = scrollScene({
-      trigger,
-      onUpdate: (prog) => {
-        camera.position.x = -1 + prog * 2;
-        camera.position.z =  5 - prog * 0.5;
-      },
-    });
-  }
-}
-
-export function tickNightSpace() {
-  planes.forEach(p => p.tick());
-}
-
-export function disposeNightSpace() {
-  offPointer && offPointer();
-  scrollTrigger && scrollTrigger.kill();
-  const threeScene = getScene();
-  planes.forEach(p => { threeScene.remove(p.mesh); p.dispose(); });
-  planes = [];
-}
+  },
+};

@@ -1,21 +1,25 @@
-// Easing constants — cubic-bezier values for GSAP
-// Use these instead of inline strings to stay consistent.
-
+// Easing vocabulary + reduced-motion state (PRD §22, §29).
+// GSAP ease names, kept in one place so motion stays consistent.
 export const ease = {
   out:    'power3.out',
   inOut:  'power2.inOut',
   in:     'power3.in',
-  scene:  'power4.out',   // scene-level reveals
-  gentle: 'power1.out',   // ambient / ambient drift
+  scene:  'expo.out',     // scene-level reveals
+  gentle: 'power1.out',   // ambient drift
+  ui:     'power2.out',   // 100–300 ms control feedback
 };
 
-// prefers-reduced-motion check
-export const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reducedQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+const listeners = new Set();
 
-// Pointer: normalize raw clientX/Y to -1..1 range
-export function normalizePointer(clientX, clientY) {
-  return {
-    x:  (clientX / window.innerWidth)  * 2 - 1,
-    y: -(clientY / window.innerHeight) * 2 + 1,
-  };
+export let reducedMotion = reducedQuery.matches;
+
+reducedQuery.addEventListener('change', e => {
+  reducedMotion = e.matches;
+  listeners.forEach(fn => fn(reducedMotion));
+});
+
+export function onReducedMotionChange(fn) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
 }

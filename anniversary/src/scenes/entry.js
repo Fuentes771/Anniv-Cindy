@@ -1,47 +1,68 @@
-// SCENE 00 — Entry
-// Minimal: fade in copy + magnetic button → triggers app start
+// SCENE 00 — Entry / Unlock
+// Almost black. Small type, one visual hint (the opening frame far away in the
+// canvas behind), a thin load line, and ENTER. Music starts only from this click.
 import gsap from 'gsap';
-import { ease } from '../motion/easing.js';
+import { ease, reducedMotion } from '../motion/easing.js';
+import { copy } from '../content/letter.js';
 
 export function initEntry({ onEnter }) {
-  const forYou = document.querySelector('.entry__for-you');
-  const date   = document.querySelector('.entry__date');
-  const btn    = document.getElementById('enter-btn');
+  const root = document.getElementById('entry');
+  const forYou = root.querySelector('[data-entry="for-you"]');
+  const date = root.querySelector('[data-entry="date"]');
+  const btn = root.querySelector('#enter-btn');
+  const bar = root.querySelector('.entry__load');
 
-  // Fade in sequence
-  const tl = gsap.timeline({ delay: 0.4 });
-  tl.to(forYou, { opacity: 1, y: 0, duration: 1.2, ease: ease.out }, 0)
-    .fromTo(forYou, { y: 18 }, { y: 0, duration: 1.2, ease: ease.out }, 0)
-    .to(date,   { opacity: 0.5, duration: 1.0, ease: ease.out }, 0.5)
-    .fromTo(date, { y: 12 }, { y: 0, duration: 1.0, ease: ease.out }, 0.5)
-    .to(btn,    { opacity: 1, duration: 0.9, ease: ease.out }, 0.9);
+  forYou.textContent = copy.entry.forYou;
+  date.textContent = copy.entry.date;
+  btn.querySelector('span').textContent = copy.entry.enter;
 
-  // Magnetic button — subtle pull toward cursor
-  btn.addEventListener('pointermove', (e) => {
-    const rect = btn.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top  + rect.height / 2;
-    const dx = (e.clientX - cx) * 0.18;
-    const dy = (e.clientY - cy) * 0.18;
-    gsap.to(btn, { x: dx, y: dy, duration: 0.4, ease: ease.out });
-  });
-  btn.addEventListener('pointerleave', () => {
-    gsap.to(btn, { x: 0, y: 0, duration: 0.5, ease: ease.out });
-  });
+  const intro = gsap.timeline({ delay: 0.3 });
+  if (reducedMotion) {
+    intro.to([forYou, date, bar], { opacity: 1, duration: 0.6 });
+  } else {
+    intro
+      .fromTo(forYou, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 1.4, ease: ease.out }, 0)
+      .fromTo(date, { opacity: 0, y: 10 }, { opacity: 0.6, y: 0, duration: 1.2, ease: ease.out }, 0.45)
+      .to(bar, { opacity: 1, duration: 0.8 }, 0.8);
+  }
 
+  // Magnetic, but light (PRD §7 Scene 00, §11)
+  const fine = window.matchMedia('(pointer: fine)').matches;
+  if (fine && !reducedMotion) {
+    btn.addEventListener('pointermove', e => {
+      const r = btn.getBoundingClientRect();
+      gsap.to(btn, {
+        x: (e.clientX - (r.left + r.width / 2)) * 0.18,
+        y: (e.clientY - (r.top + r.height / 2)) * 0.18,
+        duration: 0.35, ease: ease.ui,
+      });
+    });
+    btn.addEventListener('pointerleave', () => gsap.to(btn, { x: 0, y: 0, duration: 0.5, ease: ease.out }));
+  }
+
+  let entered = false;
   btn.addEventListener('click', () => {
-    gsap.to('#scene-entry', {
-      opacity: 0, duration: 1.0, ease: ease.in,
-      onComplete: () => {
-        document.getElementById('scene-entry').style.display = 'none';
-        document.getElementById('scroll-container').setAttribute('aria-hidden', 'false');
-        onEnter();
-      }
+    if (entered || btn.disabled) return;
+    entered = true;
+    onEnter(); // synchronous inside the gesture → audio can unlock
+    gsap.to(root, {
+      opacity: 0,
+      duration: reducedMotion ? 0.3 : 1.1,
+      ease: ease.inOut,
+      onComplete: () => { root.hidden = true; },
     });
   });
 
-  // Keyboard: Enter key
-  btn.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') btn.click();
-  });
+  return {
+    /** 0..1 — critical textures loaded. */
+    setProgress(p) {
+      bar.style.setProperty('--p', p.toFixed(3));
+      bar.setAttribute('aria-valuenow', String(Math.round(p * 100)));
+    },
+    ready() {
+      bar.classList.add('is-done');
+      btn.disabled = false;
+      gsap.fromTo(btn, { opacity: 0 }, { opacity: 1, duration: reducedMotion ? 0.3 : 1.0, ease: ease.out });
+    },
+  };
 }

@@ -1,87 +1,71 @@
 // SCENE 05 — Private Details
-// Small inserts — blur→sharp reveal, low motion, pointer proximity only.
-import { createPhotoPlane } from '../three/photoPlane.js';
-import { getScene } from '../three/scene.js';
-import { scrollScene } from '../motion/scroll.js';
-import { reducedMotion } from '../motion/easing.js';
-import { photosByScene } from '../content/photos.js';
-import { isMobile } from '../utils/viewport.js';
-import gsap from 'gsap';
-import { ease } from '../motion/easing.js';
+// Density drops. The camera barely moves; small inserts rest slightly soft and
+// come into focus under the pointer (blur → sharp, tiny scale). On touch the
+// frame nearest the centre of the screen is the sharp one — nothing is
+// hover-only (AC-06). Supporting motion: micro rotation settling on reveal.
+import { lerp3, easeSine, damp } from '../utils/math.js';
 
-// Small scattered positions, low z-depth variation
-const LAYOUT = [
-  { x: -1.8, y:  0.8, z:  0.2, scale: 0.70 },
-  { x:  1.5, y:  0.3, z: -0.5, scale: 0.65 },
-  { x: -0.4, y: -1.0, z:  0.0, scale: 0.75 },
-  { x:  2.0, y: -0.8, z: -1.0, scale: 0.60 },
-  { x: -2.2, y: -0.2, z: -0.8, scale: 0.68 },
-  { x:  0.6, y:  1.2, z: -0.3, scale: 0.62 },
+const REST_BLUR = 0.3;
+
+// [x, y, z, rotZ, height]
+const DESKTOP = [
+  [-2.65,  0.95, -0.4,  0.035, 1.55],
+  [-0.85,  1.3,  -1.3, -0.02,  1.15],
+  [ 0.95,  0.8,  -0.2,  0.02,  1.6],
+  [ 2.75,  1.0,  -1.1, -0.03,  1.3],
+  [-2.0,  -1.05, -0.9, -0.02,  1.45],
+  [-0.2,  -0.95,  0.2,  0.03,  1.25],
+  [ 1.6,  -1.25, -0.7, -0.015, 1.1],
+  [ 3.25, -0.6,  -1.9,  0.025, 1.35],
+];
+const MOBILE = [
+  [-0.5,  1.0,  0.0,  0.03, 1.35],
+  [ 0.55, 0.4, -0.8, -0.02, 1.3],
+  [-0.45,-0.75,-0.5, -0.025,1.3],
+  [ 0.5, -1.35, 0.0,  0.02, 1.2],
 ];
 
-let planes = [];
-let scrollTrigger;
-
-export async function initPrivateDetails() {
-  const assets     = photosByScene('privateDetails');
-  const threeScene = getScene();
-  const mobile     = isMobile();
-  const count      = mobile ? 2 : Math.min(assets.length, LAYOUT.length);
-
-  for (let i = 0; i < count; i++) {
-    const asset  = assets[i % assets.length];
-    const layout = LAYOUT[i];
-
-    const plane = createPhotoPlane({
-      src: asset.srcs.content,
-      width: asset.origW,
-      height: asset.origH,
-      planeHeight: 2.2 * layout.scale,
-      position: { x: layout.x, y: layout.y, z: layout.z },
-      parallax: 0.06,
+export default {
+  build(ctx) {
+    const slots = ctx.mobile ? MOBILE : DESKTOP;
+    slots.forEach(([x, y, z, rz, h], i) => {
+      ctx.add(ctx.photos[i % ctx.photos.length], {
+        height: h, pos: [x, y, z], rot: [0, 0, rz], blur: REST_BLUR,
+      });
     });
+  },
 
-    threeScene.add(plane.mesh);
-    planes.push(plane);
-  }
+  pose(q, ctx) {
+    const t = easeSine(q);
+    const z0 = ctx.mobile ? 6.4 : 6.3;
+    return {
+      pos: lerp3([0, 0.05, z0], [0.15, -0.1, z0 - 0.6], t),
+      target: [0.1, 0, -1],
+    };
+  },
 
-  // Stagger load + blur-to-sharp via opacity reveal
-  for (let i = 0; i < planes.length; i++) {
-    await planes[i].load();
-    gsap.to(planes[i].mesh.material, {
-      opacity: 0.82,
-      delay: i * 0.12,
-      duration: 1.6,
-      ease: ease.out,
-    });
-    // micro rotation
-    gsap.fromTo(planes[i].mesh.rotation,
-      { z: (Math.random() - 0.5) * 0.04 },
-      { z: 0, duration: 2.0, ease: ease.out, delay: i * 0.12 }
-    );
-  }
+  update(q, dt, ctx) {
+    const e = ctx.engine;
+    const active = ctx.reduced ? null : (e.touch ? e.nearestToCentre(ctx.planes) : e.pick(ctx.planes));
+    if (!e.touch) e.setCursorHover(!!active, 'details');
+    const k = damp(6, dt);
 
-  if (!reducedMotion) {
-    const trigger = document.querySelector('[data-scene="privateDetails"]');
-    scrollTrigger = scrollScene({
-      trigger,
-      onUpdate: (prog) => {
-        // subtle y drift as scroll progresses
-        planes.forEach((p, i) => {
-          p.mesh.position.y = LAYOUT[i].y + prog * 0.3 * (i % 2 === 0 ? 1 : -1);
-        });
-      },
-    });
-  }
-}
+    for (const p of ctx.planes) {
+      const u = p.uniforms;
+      const isActive = p === active;
+      const blurGoal = ctx.reduced ? 0 : isActive ? 0 : REST_BLUR;
+      u.uBlur.value += (blurGoal - u.uBlur.value) * k;
 
-export function tickPrivateDetails() {
-  planes.forEach(p => p.tick());
-}
+      const s = isActive ? 1.035 : 1; // PRD §11: 1–4 % scale
+      p.mesh.scale.x += (p.base.scale.x * s - p.mesh.scale.x) * k;
+      p.mesh.scale.y += (p.base.scale.y * s - p.mesh.scale.y) * k;
 
-export function disposePrivateDetails() {
-  scrollTrigger && scrollTrigger.kill();
-  const threeScene = getScene();
-  planes.forEach(p => { threeScene.remove(p.mesh); p.dispose(); });
-  planes = [];
-}
+      // micro rotation: tilted a little more while unrevealed, settles as it appears
+      p.mesh.rotation.z = p.base.rot.z * (1 + (1 - u.uReveal.value) * 2.5);
+    }
+  },
+
+  leave(ctx) {
+    ctx.engine.setCursorHover(false, 'details');
+  },
+};
