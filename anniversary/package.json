@@ -1,12 +1,13 @@
 {
   "name": "anniversary",
   "version": "1.0.0",
-  "description": "",
+  "description": "BETWEEN FRAMES — spatial personal archive (3-year anniversary)",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "process-assets": "node scripts/process-assets.cjs"
+    "process-assets": "node scripts/process-assets.cjs",
+    "check": "node scripts/check-assets.mjs"
   },
   "keywords": [],
   "author": "",
@@ -14,10 +15,11 @@
   "type": "module",
   "dependencies": {
     "gsap": "^3.15.0",
-    "sharp": "^0.35.4",
     "three": "^0.186.1"
   },
   "devDependencies": {
+    "sharp": "^0.35.4",
     "vite": "^8.3.1"
-  }
+  },
+  "private": true
 }

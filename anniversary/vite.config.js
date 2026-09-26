@@ -5,14 +5,11 @@ export default defineConfig({
   publicDir: 'public',
   server: {
     port: 5173,
-    open: true,
+    host: true,
   },
   build: {
     outDir: 'dist',
     assetsInlineLimit: 4096,
     chunkSizeWarningLimit: 800,
-    rollupOptions: {
-      input: 'index.html',
-    },
   },
 });
