@@ -1,0 +1,38 @@
+/* ─── Responsive ──────────────────────────────────────── */
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .scene--letter {
+    padding: var(--space-16) clamp(var(--space-6), 6vw, var(--space-24));
+  }
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  #progress { display: none; }
+
+  #controls {
+    bottom: var(--space-4);
+    right: var(--space-4);
+  }
+
+  .scene--letter {
+    padding: var(--space-12) var(--space-6);
+  }
+
+  .letter__inner {
+    max-width: 100%;
+  }
+}
+
+/* ─── Reduced motion ──────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .waveform__bar {
+    animation: none;
+  }
+
+  /* JS reads this to disable camera travel & parallax */
+  :root {
+    --reduced-motion: 1;
+  }
+}

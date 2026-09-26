@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Between Frames</title>
+  <meta name="robots" content="noindex, nofollow" />
+
+  <!-- CSS -->
+
+  <!-- Preconnect fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <script type="module" crossorigin src="/assets/index-Dz4PTLga.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-DWFAjJTD.css">
+</head>
+<body>
+
+  <!-- Custom cursor (desktop only) -->
+  <div id="cursor" aria-hidden="true"></div>
+
+  <!-- Shared Three.js canvas -->
+  <div id="experience" aria-hidden="true"></div>
+
+  <!-- ── SCENE 00 — ENTRY ─────────────────────────────── -->
+  <section
+    id="scene-entry"
+    class="scene scene--interactive scene-entry"
+    data-scene="entry"
+    aria-label="Entry"
+  >
+    <div class="entry__inner">
+      <p class="t-for-you entry__for-you">For You</p>
+      <p class="t-date entry__date">27.09.26</p>
+      <button
+        class="entry__btn"
+        id="enter-btn"
+        aria-label="Enter the experience"
+      >Enter</button>
+    </div>
+  </section>
+
+  <!-- ── SCROLL BODY (scenes 01–10 revealed after entry) ── -->
+  <div id="scroll-container" aria-hidden="true">
+
+    <!-- SCENE 01 — OPENING FRAME -->
+    <section
+      class="scene"
+      data-scene="opening"
+      aria-label="Opening"
+      style="min-height: 200dvh;"
+    ></section>
+
+    <!-- SCENE 02 — FRAME FIELD -->
+    <section
+      class="scene"
+      data-scene="frameField"
+      aria-label="Frame Field"
+      style="min-height: 200dvh;"
+    ></section>
+
+    <!-- SCENE 03 — ENVIRONMENTAL DEPTH -->
+    <section
+      class="scene"
+      data-scene="environmentalDepth"
+      aria-label="Environmental Depth"
+      style="min-height: 180dvh;"
+    ></section>
+
+    <!-- SCENE 04 — REFLECTIVE PASSAGE -->
+    <section
+      class="scene"
+      data-scene="reflectivePassage"
+      aria-label="Reflective Passage"
+      style="min-height: 180dvh;"
+    ></section>
+
+    <!-- SCENE 05 — PRIVATE DETAILS -->
+    <section
+      class="scene"
+      data-scene="privateDetails"
+      aria-label="Private Details"
+      style="min-height: 160dvh;"
+    ></section>
+
+    <!-- SCENE 06 — NIGHT SPACE -->
+    <section
+      class="scene"
+      data-scene="nightSpace"
+      aria-label="Night Space"
+      style="min-height: 200dvh;"
+    ></section>
+
+    <!-- SCENE 07 — COUPLE ARCHIVE -->
+    <section
+      class="scene"
+      data-scene="coupleArchive"
+      aria-label="Couple Archive"
+      style="min-height: 220dvh;"
+    ></section>
+
+    <!-- SCENE 08 — QUIET COUNTERPOINT -->
+    <section
+      class="scene"
+      data-scene="quietCounterpoint"
+      aria-label="Quiet Counterpoint"
+      style="min-height: 140dvh;"
+    ></section>
+
+    <!-- SCENE 09 — LETTER -->
+    <section
+      class="scene scene--interactive scene-letter scene--letter"
+      data-scene="letter"
+      aria-label="Letter"
+      aria-hidden="false"
+    >
+      <div class="letter__inner">
+        <p class="t-for-you letter__for-you">For You</p>
+
+        <div class="letter__body t-body" id="letter-content">
+          <!-- Placeholder — replace with personal letter from owner -->
+          <p>[ Isi surat dari pemilik ]</p>
+        </div>
+
+        <p class="t-body letter__signature" id="letter-signature">— [ Nama ]</p>
+      </div>
+    </section>
+
+    <!-- SCENE 10 — FINAL FRAME -->
+    <section
+      class="scene scene-final"
+      data-scene="finalFrame"
+      aria-label="Final Frame"
+      style="min-height: 200dvh;"
+    >
+      <p class="final__line t-body" id="final-line">
+        <!-- Personal closing line from owner -->
+        [ Closing line ]
+      </p>
+    </section>
+
+  </div><!-- /scroll-container -->
+
+  <!-- ── UI Controls ───────────────────────────────────── -->
+  <nav id="controls" aria-label="Experience controls">
+    <button
+      class="ctrl-audio"
+      id="audio-toggle"
+      aria-pressed="true"
+      aria-label="Toggle music"
+    >
+      <span class="waveform" aria-hidden="true">
+        <span class="waveform__bar"></span>
+        <span class="waveform__bar"></span>
+        <span class="waveform__bar"></span>
+        <span class="waveform__bar"></span>
+        <span class="waveform__bar"></span>
+      </span>
+    </button>
+  </nav>
+
+  <!-- Scene progress dots -->
+  <nav id="progress" aria-label="Scene progress" aria-hidden="true"></nav>
+
+  <!-- Hidden audio element -->
+  <audio id="bg-audio" loop preload="none" aria-hidden="true">
+    <source src="/assets/audio/music.mp3" type="audio/mpeg" />
+  </audio>
+
+  <!-- App entry point -->
+</body>
+</html>
